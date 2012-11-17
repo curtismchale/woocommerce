@@ -21,6 +21,7 @@ jQuery(document).ready(function(){
 		var stock	 			= $wc_inline_data.find('.stock').text();
 		var featured	 		= $wc_inline_data.find('.featured').text();
 		var manage_stock		= $wc_inline_data.find('.manage_stock').text();
+		var menu_order			= $wc_inline_data.find('.menu_order').text();
 		
 		jQuery('input[name="_sku"]', '.inline-edit-row').val(sku);
 		jQuery('input[name="_regular_price"]', '.inline-edit-row').val(regular_price);
@@ -30,6 +31,7 @@ jQuery(document).ready(function(){
 		jQuery('input[name="_width"]', '.inline-edit-row').val(width); 
 		jQuery('input[name="_height"]', '.inline-edit-row').val(height);
 		jQuery('input[name="_stock"]', '.inline-edit-row').val(stock); 
+		jQuery('input[name="menu_order"]', '.inline-edit-row').val(menu_order); 
 		
 		jQuery('select[name="_visibility"] option, select[name="_stock_status"] option').removeAttr('selected');
 		
@@ -93,11 +95,17 @@ jQuery(document).ready(function(){
 	
 	 jQuery('#wpbody').on('change', '#woocommerce-fields-bulk .inline-edit-group .change_to', function(){  
     
-    	if (jQuery(this).val()==1) {
+    	if (jQuery(this).val() > 0) {
     		jQuery(this).closest('div').find('.alignright').show();
     	} else {
     		jQuery(this).closest('div').find('.alignright').hide();
     	}
     
+    });
+    
+    jQuery('.product_shipping_class-checklist input').change(function(){
+    	
+    	jQuery(this).closest('li').siblings().find('input:checked').removeAttr('checked');
+    	
     });
 });  

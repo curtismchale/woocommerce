@@ -5,13 +5,22 @@
  * Based on 'Duplicate Post' (http://www.lopo.it/duplicate-post-plugin/) by Enrico Battocchi
  *
  * @author 		WooThemes
- * @category 	Admin Includes
- * @package 	WooCommerce
+ * @category 	Admin
+ * @package 	WooCommerce/Admin
+ * @version     1.6.4
  */
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
+/**
+ * Duplicate a product action.
+ *
+ * @access public
+ * @return void
+ */
 function woocommerce_duplicate_product() {
 	if (! ( isset( $_GET['post']) || isset( $_POST['post'])  || ( isset($_REQUEST['action']) && 'duplicate_post_save_as_new_page' == $_REQUEST['action'] ) ) ) {
-		wp_die(__('No product to duplicate has been supplied!', 'woocommerce'));
+		wp_die(__( 'No product to duplicate has been supplied!', 'woocommerce' ));
 	}
 
 	// Get the original page
@@ -31,12 +40,17 @@ function woocommerce_duplicate_product() {
 		wp_redirect( admin_url( 'post.php?action=edit&post=' . $new_id ) );
 		exit;
 	} else {
-		wp_die(__('Product creation failed, could not find original product:', 'woocommerce') . ' ' . $id);
+		wp_die(__( 'Product creation failed, could not find original product:', 'woocommerce' ) . ' ' . $id);
 	}
 }
 
+
 /**
- * Get a product from the database
+ * Get a product from the database to duplicate
+ *
+ * @access public
+ * @param mixed $id
+ * @return void
  */
 function woocommerce_get_product_to_duplicate($id) {
 	global $wpdb;
@@ -48,34 +62,41 @@ function woocommerce_get_product_to_duplicate($id) {
 	return $post[0];
 }
 
+
 /**
- * Function to create the duplicate
+ * Function to create the duplicate of the product.
+ *
+ * @access public
+ * @param mixed $post
+ * @param int $parent (default: 0)
+ * @param string $post_status (default: '')
+ * @return void
  */
-function woocommerce_create_duplicate_from_product($post, $parent = 0) {
+function woocommerce_create_duplicate_from_product( $post, $parent = 0, $post_status = '' ) {
 	global $wpdb;
 
 	$new_post_author 	= wp_get_current_user();
 	$new_post_date 		= current_time('mysql');
 	$new_post_date_gmt 	= get_gmt_from_date($new_post_date);
-	
-	if ($parent>0) :
+
+	if ( $parent > 0 ) {
 		$post_parent		= $parent;
+		$post_status 		= $post_status ? $post_status : 'publish';
 		$suffix 			= '';
-		$post_status     	= 'publish';
-	else :
+	} else {
 		$post_parent		= $post->post_parent;
-		$post_status     	= 'draft';
-		$suffix 			= __(" (Copy)", 'woocommerce');
-	endif;
-	
-	$new_post_type 		= $post->post_type;
-	$post_content    	= str_replace("'", "''", $post->post_content);
-	$post_content_filtered = str_replace("'", "''", $post->post_content_filtered);
-	$post_excerpt    	= str_replace("'", "''", $post->post_excerpt);
-	$post_title      	= str_replace("'", "''", $post->post_title).$suffix;
-	$post_name       	= str_replace("'", "''", $post->post_name);
-	$comment_status  	= str_replace("'", "''", $post->comment_status);
-	$ping_status     	= str_replace("'", "''", $post->ping_status);
+		$post_status 		= $post_status ? $post_status : 'draft';
+		$suffix 			= ' ' . __( '(Copy)', 'woocommerce' );
+	}
+
+	$new_post_type 			= $post->post_type;
+	$post_content    		= str_replace("'", "''", $post->post_content);
+	$post_content_filtered 	= str_replace("'", "''", $post->post_content_filtered);
+	$post_excerpt    		= str_replace("'", "''", $post->post_excerpt);
+	$post_title      		= str_replace("'", "''", $post->post_title).$suffix;
+	$post_name       		= str_replace("'", "''", $post->post_name);
+	$comment_status  		= str_replace("'", "''", $post->comment_status);
+	$ping_status     		= str_replace("'", "''", $post->ping_status);
 
 	// Insert the new template in the post table
 	$wpdb->query(
@@ -87,41 +108,55 @@ function woocommerce_create_duplicate_from_product($post, $parent = 0) {
 	$new_post_id = $wpdb->insert_id;
 
 	// Copy the taxonomies
-	woocommerce_duplicate_post_taxonomies($post->ID, $new_post_id, $post->post_type);
+	woocommerce_duplicate_post_taxonomies( $post->ID, $new_post_id, $post->post_type );
 
 	// Copy the meta information
-	woocommerce_duplicate_post_meta($post->ID, $new_post_id);
-	
+	woocommerce_duplicate_post_meta( $post->ID, $new_post_id );
+
 	// Copy the children (variations)
-	if ( $children_products =& get_children( 'post_parent='.$post->ID.'&post_type=product_variation' ) ) :
+	if ( $children_products =& get_children( 'post_parent='.$post->ID.'&post_type=product_variation' ) ) {
 
-		if ($children_products) foreach ($children_products as $child) :
-			
-			woocommerce_create_duplicate_from_product(woocommerce_get_product_to_duplicate($child->ID), $new_post_id);
-			
-		endforeach;
+		if ($children_products) foreach ($children_products as $child) {
 
-	endif;
+			woocommerce_create_duplicate_from_product( woocommerce_get_product_to_duplicate( $child->ID ), $new_post_id, $child->post_status );
+
+		}
+
+	}
 
 	return $new_post_id;
 }
 
+
 /**
  * Copy the taxonomies of a post to another post
+ *
+ * @access public
+ * @param mixed $id
+ * @param mixed $new_id
+ * @param mixed $post_type
+ * @return void
  */
 function woocommerce_duplicate_post_taxonomies($id, $new_id, $post_type) {
 	global $wpdb;
 	$taxonomies = get_object_taxonomies($post_type); //array("category", "post_tag");
 	foreach ($taxonomies as $taxonomy) {
 		$post_terms = wp_get_object_terms($id, $taxonomy);
-		for ($i=0; $i<count($post_terms); $i++) {
+		$post_terms_count = sizeof( $post_terms );
+		for ($i=0; $i<$post_terms_count; $i++) {
 			wp_set_object_terms($new_id, $post_terms[$i]->slug, $taxonomy, true);
 		}
 	}
 }
 
+
 /**
  * Copy the meta information of a post to another post
+ *
+ * @access public
+ * @param mixed $id
+ * @param mixed $new_id
+ * @return void
  */
 function woocommerce_duplicate_post_meta($id, $new_id) {
 	global $wpdb;

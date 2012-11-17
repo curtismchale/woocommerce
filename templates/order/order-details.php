@@ -1,31 +1,37 @@
 <?php
 /**
- * Order Details
+ * Order details
+ *
+ * @author 		WooThemes
+ * @package 	WooCommerce/Templates
+ * @version     1.6.4
  */
- 
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 global $woocommerce;
 
 $order = new WC_Order( $order_id );
 ?>
-<h2><?php _e('Order Details', 'woocommerce'); ?></h2>
+<h2><?php _e( 'Order Details', 'woocommerce' ); ?></h2>
 <table class="shop_table order_details">
 	<thead>
 		<tr>
-			<th class="product-name"><?php _e('Product', 'woocommerce'); ?></th>
-			<th class="product-quantity"><?php _e('Qty', 'woocommerce'); ?></th>
-			<th class="product-total"><?php _e('Totals', 'woocommerce'); ?></th>
+			<th class="product-name"><?php _e( 'Product', 'woocommerce' ); ?></th>
+			<th class="product-quantity"><?php _e( 'Qty', 'woocommerce' ); ?></th>
+			<th class="product-total"><?php _e( 'Totals', 'woocommerce' ); ?></th>
 		</tr>
 	</thead>
 	<tfoot>
-	<?php 
-		if ($totals = $order->get_order_item_totals()) foreach ($totals as $label => $value) :
+	<?php
+		if ( $totals = $order->get_order_item_totals() ) foreach ( $totals as $total ) :
 			?>
 			<tr>
-				<th scope="row" colspan="2"><?php echo $label; ?></th>
-				<td><?php echo $value; ?></td>
+				<th scope="row" colspan="2"><?php echo $total['label']; ?></th>
+				<td><?php echo $total['value']; ?></td>
 			</tr>
-			<?php 
-		endforeach; 
+			<?php
+		endforeach;
 	?>
 	</tfoot>
 	<tbody>
@@ -37,33 +43,36 @@ $order = new WC_Order( $order_id );
 				if (isset($item['variation_id']) && $item['variation_id'] > 0) :
 					$_product = new WC_Product_Variation( $item['variation_id'] );
 				else :
-					$_product = new WC_Product( $item['id'] );
+					$_product = new WC_Product( $item['product_id'] );
 				endif;
 
 				echo '
-					<tr>
+					<tr class = "' . esc_attr( apply_filters('woocommerce_order_table_item_class', 'order_table_item', $item, $order ) ) . '">
 						<td class="product-name">';
-						
-				echo '<a href="'.get_permalink( $item['id'] ).'">' . $item['name'] . '</a>';
 
-				$item_meta = new order_item_meta( $item['item_meta'] );
+				echo '<a href="'.get_permalink( $item['product_id'] ).'">' . $item['name'] . '</a>';
+
+				$item_meta = new WC_Order_Item_Meta( $item['item_meta'] );
 				$item_meta->display();
-				
-				if ($_product->exists && $_product->is_downloadable() && ($order->status=='completed' || (get_option('woocommerce_downloads_grant_access_after_payment')=='yes' && $order->status=='processing'))) :
-					
-					echo '<br/><small><a href="' . $order->get_downloadable_file_url( $item['id'], $item['variation_id'] ) . '">' . __('Download file &rarr;', 'woocommerce') . '</a></small>';
-		
-				endif;	
+
+				if ( $_product->exists() && $_product->is_downloadable() && $order->is_download_permitted() ) :
+
+				$download_file_urls = $order->get_downloadable_file_urls( $item['product_id'], $item['variation_id'], $item );
+				foreach ( $download_file_urls as $i => $download_file_url ) :
+					echo '<br/><small><a href="' . $download_file_url . '">' . sprintf( __( 'Download file %s &rarr;', 'woocommerce' ), ( count( $download_file_urls ) > 1 ? $i + 1 : '' ) ) . '</a></small>';
+				endforeach;
+
+				endif;
 
 				echo '</td><td class="product-quantity">'.$item['qty'].'</td><td class="product-total">' . $order->get_formatted_line_subtotal($item) . '</td></tr>';
-				
+
 				// Show any purchase notes
 				if ($order->status=='completed' || $order->status=='processing') :
 					if ($purchase_note = get_post_meta( $_product->id, '_purchase_note', true)) :
 						echo '<tr class="product-purchase-note"><td colspan="3">' . apply_filters('the_content', $purchase_note) . '</td></tr>';
 					endif;
 				endif;
-				
+
 			endforeach;
 		endif;
 
@@ -74,17 +83,19 @@ $order = new WC_Order( $order_id );
 
 <?php if ( get_option('woocommerce_allow_customers_to_reorder') == 'yes' && $order->status=='completed' ) : ?>
 	<p class="order-again">
-		<a href="<?php echo esc_url( $woocommerce->nonce_url( 'order_again', add_query_arg( 'order_again', $order->id, add_query_arg( 'order', $order->id, get_permalink( woocommerce_get_page_id( 'view_order' ) ) ) ) ) ); ?>" class="button"><?php _e('Order Again', 'woocommerce'); ?></a>
+		<a href="<?php echo esc_url( $woocommerce->nonce_url( 'order_again', add_query_arg( 'order_again', $order->id, add_query_arg( 'order', $order->id, get_permalink( woocommerce_get_page_id( 'view_order' ) ) ) ) ) ); ?>" class="button"><?php _e( 'Order Again', 'woocommerce' ); ?></a>
 	</p>
 <?php endif; ?>
 
+<?php do_action( 'woocommerce_order_details_after_order_table', $order ); ?>
+
 <header>
-	<h2><?php _e('Customer details', 'woocommerce'); ?></h2>
+	<h2><?php _e( 'Customer details', 'woocommerce' ); ?></h2>
 </header>
 <dl class="customer_details">
 <?php
-	if ($order->billing_email) echo '<dt>'.__('Email:', 'woocommerce').'</dt><dd>'.$order->billing_email.'</dd>';
-	if ($order->billing_phone) echo '<dt>'.__('Telephone:', 'woocommerce').'</dt><dd>'.$order->billing_phone.'</dd>';
+	if ($order->billing_email) echo '<dt>'.__( 'Email:', 'woocommerce' ).'</dt><dd>'.$order->billing_email.'</dd>';
+	if ($order->billing_phone) echo '<dt>'.__( 'Telephone:', 'woocommerce' ).'</dt><dd>'.$order->billing_phone.'</dd>';
 ?>
 </dl>
 
@@ -95,28 +106,28 @@ $order = new WC_Order( $order_id );
 	<div class="col-1">
 
 <?php endif; ?>
-	
+
 		<header class="title">
-			<h3><?php _e('Billing Address', 'woocommerce'); ?></h3>
+			<h3><?php _e( 'Billing Address', 'woocommerce' ); ?></h3>
 		</header>
 		<address><p>
 			<?php
-				if (!$order->get_formatted_billing_address()) _e('N/A', 'woocommerce'); else echo $order->get_formatted_billing_address();
+				if (!$order->get_formatted_billing_address()) _e( 'N/A', 'woocommerce' ); else echo $order->get_formatted_billing_address();
 			?>
 		</p></address>
 
 <?php if (get_option('woocommerce_ship_to_billing_address_only')=='no') : ?>
 
 	</div><!-- /.col-1 -->
-	
+
 	<div class="col-2">
-	
+
 		<header class="title">
-			<h3><?php _e('Shipping Address', 'woocommerce'); ?></h3>
+			<h3><?php _e( 'Shipping Address', 'woocommerce' ); ?></h3>
 		</header>
 		<address><p>
 			<?php
-				if (!$order->get_formatted_shipping_address()) _e('N/A', 'woocommerce'); else echo $order->get_formatted_shipping_address();
+				if (!$order->get_formatted_shipping_address()) _e( 'N/A', 'woocommerce' ); else echo $order->get_formatted_shipping_address();
 			?>
 		</p></address>
 

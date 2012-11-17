@@ -1,25 +1,38 @@
-<?php if (get_option('woocommerce_ship_to_billing_address_only')=='no') : ?>
+<?php
+/**
+ * Email Addresses
+ *
+ * @author 		WooThemes
+ * @package 	WooCommerce/Templates/Emails
+ * @version     1.6.4
+ */
 
-	<div style="float:left; width: 49%;">
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
-<?php endif; ?>
-	
-		<h3><?php _e('Billing address', 'woocommerce'); ?></h3>
-		
-		<p><?php echo $order->get_formatted_billing_address(); ?></p>
+?><table cellspacing="0" cellpadding="0" style="width: 100%; vertical-align: top;" border="0">
 
-<?php if (get_option('woocommerce_ship_to_billing_address_only')=='no') : ?>
+	<tr>
 
-	</div>
-	
-	<div style="float:right; width: 49%;">
-	
-		<h3><?php _e('Shipping address', 'woocommerce'); ?></h3>
-		
-		<p><?php echo $order->get_formatted_shipping_address(); ?></p>
-	
-	</div>
-	
-	<div style="clear:both;"></div>
+		<td valign="top" width="50%">
 
-<?php endif; ?>
+			<h3><?php _e( 'Billing address', 'woocommerce' ); ?></h3>
+
+			<p><?php echo $order->get_formatted_billing_address(); ?></p>
+
+		</td>
+
+		<?php if ( get_option( 'woocommerce_ship_to_billing_address_only' ) == 'no' && ( $shipping = $order->get_formatted_shipping_address() ) ) : ?>
+
+		<td valign="top" width="50%">
+
+			<h3><?php _e( 'Shipping address', 'woocommerce' ); ?></h3>
+
+			<p><?php echo $shipping; ?></p>
+
+		</td>
+
+		<?php endif; ?>
+
+	</tr>
+
+</table>

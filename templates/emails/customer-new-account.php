@@ -1,16 +1,20 @@
-<?php if (!defined('ABSPATH')) exit; ?>
+<?php
+/**
+ * Customer new account email
+ *
+ * @author 		WooThemes
+ * @package 	WooCommerce/Templates/Emails
+ * @version     1.6.4
+ */
 
-<?php do_action('woocommerce_email_header', $email_heading); ?>
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly ?>
 
-<p><?php echo sprintf(__("Thanks for registering on %s. Your login details are below:", 'woocommerce'), $blogname); ?></p>
+<?php do_action( 'woocommerce_email_header', $email_heading ); ?>
 
-<ul>
-	<li><?php echo sprintf(__('Username: %s', 'woocommerce'), $user_login); ?></li>
-	<li><?php echo sprintf(__('Password: %s', 'woocommerce'), $user_pass); ?></li>
-</ul>
+<p><?php printf(__("Thanks for creating an account on %s. Your username is <strong>%s</strong>.", 'woocommerce'), esc_html( $blogname ), esc_html( $user_login ) ); ?></p>
 
-<p><?php echo sprintf(__("You can login to your account area here: %s.", 'woocommerce'), get_permalink(woocommerce_get_page_id('myaccount'))); ?></p>
+<p><?php printf(__( 'You can access your account area here: %s.', 'woocommerce' ), get_permalink(woocommerce_get_page_id('myaccount'))); ?></p>
 
 <div style="clear:both;"></div>
 
-<?php do_action('woocommerce_email_footer'); ?>
+<?php do_action( 'woocommerce_email_footer' ); ?>

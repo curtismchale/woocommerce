@@ -2,31 +2,48 @@
 /**
  * WooCommerce Random Products Widget
  *
- * @package  WooCommerce
- * @category Widgets
- * @author   WooThemes
+ * @author 		WooThemes
+ * @category 	Widgets
+ * @package 	WooCommerce/Widgets
+ * @version 	1.6.4
+ * @extends 	WP_Widget
  */
+
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 class WooCommerce_Widget_Random_Products extends WP_Widget {
 
-	/** constructor */
+	/**
+	 * constructor
+	 *
+	 * @access public
+	 * @return void
+	 */
 	function __construct() {
 		$this->id_base = 'woocommerce_random_products';
-		$this->name    = __('WooCommerce Random Products', 'woocommerce' );
+		$this->name    = __( 'WooCommerce Random Products', 'woocommerce' );
 		$this->widget_options = array(
-			'classname'   => 'widget_random_products',
+			'classname'   => 'woocommerce widget_random_products',
 			'description' => __( 'Display a list of random products on your site.', 'woocommerce' ),
 		);
 
 		parent::__construct( $this->id_base, $this->name, $this->widget_options );
 	}
 
-	/** @see WP_Widget::widget */
+	/**
+	 * widget function.
+	 *
+	 * @see WP_Widget
+	 * @access public
+	 * @param array $args
+	 * @param array $instance
+	 * @return void
+	 */
 	function widget( $args, $instance ) {
 		global $woocommerce;
 
 		// Use default title as fallback
-		$title = ( '' === $instance['title'] ) ? __('Random Products', 'woocommerce') : $instance['title'];
+		$title = ( '' === $instance['title'] ) ? __('Random Products', 'woocommerce' ) : $instance['title'];
 		$title = apply_filters('widget_title', $title, $instance, $this->id_base);
 
 		// Setup product query
@@ -38,16 +55,14 @@ class WooCommerce_Widget_Random_Products extends WP_Widget {
 			'no_found_rows'  => 1
 		);
 
-		if ( $instance['show_variations'] ) {
-			$query_args['meta_query'] = array(
-				array(
-					'key'     => '_visibility',
-					'value'   => array('catalog', 'visible'),
-					'compare' => 'IN',
-				),
-			);
+		$query_args['meta_query'] = array();
+
+		if ( ! $instance['show_variations'] ) {
+			$query_args['meta_query'][] = $woocommerce->query->visibility_meta_query();
 			$query_args['post_parent'] = 0;
 		}
+
+	    $query_args['meta_query'][] = $woocommerce->query->stock_status_meta_query();
 
 		$query = new WP_Query( $query_args );
 
@@ -80,7 +95,15 @@ class WooCommerce_Widget_Random_Products extends WP_Widget {
 		}
 	}
 
-	/** @see WP_Widget->update */
+	/**
+	 * update function.
+	 *
+	 * @see WP_Widget->update
+	 * @access public
+	 * @param array $new_instance
+	 * @param array $old_instance
+	 * @return array
+	 */
 	function update( $new_instance, $old_instance ) {
 		$instance = array(
 			'title'           => strip_tags($new_instance['title']),
@@ -91,7 +114,14 @@ class WooCommerce_Widget_Random_Products extends WP_Widget {
 		return $instance;
 	}
 
-	/** @see WP_Widget->form */
+	/**
+	 * form function.
+	 *
+	 * @see WP_Widget->form
+	 * @access public
+	 * @param array $instance
+	 * @return void
+	 */
 	function form( $instance ) {
 		// Default values
 		$title           = isset( $instance['title'] ) ? $instance['title'] : '';
@@ -117,4 +147,4 @@ class WooCommerce_Widget_Random_Products extends WP_Widget {
 		<?php
 	}
 
-} // class WooCommerce_Widget_Random_Products
+}
